@@ -11,14 +11,40 @@ class MoviesController < ApplicationController
   end
 
   def index
-    @movies = Movie.order(params[:sort_by])
+    state = false
     @all_ratings = Movie.get_all_ratings
-    @set_ratings = params[:ratings]
+    
+    @sort_by = params[:sort_field]
+
+    if @sort_by
+      session[:sort_field] = @sort_by
+    elsif session[:sort_field]
+      @sort_by=session[:sort_field]
+      state = true
+    end
     
     if params[:ratings]
-      @movies = Movie.where(:rating=>params[:ratings].keys).order(params[:sort_by])
+      @set_ratings = params[:ratings]
+      session[:ratings] = @set_ratings
+    elsif session[:ratings]
+      @set_ratings = session[:ratings]
+      state = true
+    end
+
+    if state
+      flash.keep
+      puts(@set_ratings)
+      redirect_to(:action=>'index',:sort_field=>@sort_by,:ratings=>@set_ratings)
+    end
+
+    if @set_ratings and @sort_by
+      @movies = Movie.where(:rating=>@set_ratings.keys).order(@sort_by)
+    elsif @set_ratings
+      @movies = Movie.where(:rating=>@set_ratings.keys)
+    elsif @sort_by
+      @movies = Movie.all.order(@sort_by)
     else
-      @movies = Movie.order(params[:sort_by])
+      @movies = Movie.all
     end
     
     if !@set_ratings
